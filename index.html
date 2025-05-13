@@ -1,233 +1,256 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Archive.org File Browser</title>
-  <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@1.5.10/css/pico.min.css">
-</head>
-<body>
-  <main class="container">
-    <h1>Archive.org File Browser</h1>
-    <div id="breadcrumb"></div>
-    <div id="info"></div>
-    <table id="file-table">
-      <thead>
-        <tr>
-          <th><button id="sort-name" onclick="setSort('name')">Name</button></th>
-          <th><button id="sort-size" onclick="setSort('size')">Size</button></th>
-          <th><button id="sort-format" onclick="setSort('format')">Format</button></th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </main>
-
-  <script>
-    let currentSort = getSortField();
-    let currentSortDir = getSortDir();
-
-    function setSort(field) {
-      if (currentSort === field) {
-        currentSortDir *= -1;
-      } else {
-        currentSort = field;
-        currentSortDir = 1;
+  <head>
+    <meta charset="UTF-8">
+    <title>Archive.org File Browser</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <style>
+      #breadcrumb:empty::before, #info:empty::before {
+        content: '\00a0';
+        display: block;
+        height: 1.5em;
       }
-      const params = new URLSearchParams(window.location.search);
-      params.set('sort', currentSort);
-      params.set('dir', currentSortDir === 1 ? 'asc' : 'desc');
-      window.location.search = params.toString();
-    }
+      #file-table, #breadcrumb, #info {
+        display: none;
+      }
+      #loading {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="container">
+      <h1>Archive.org File Browser</h1>
+      <div id="loading"><span aria-busy="true">Loading...</span></div>
+      <div id="breadcrumb">&nbsp;</div>
+      <div id="info">&nbsp;</div>
+      <table class="striped" id="file-table">
+        <thead>
+          <tr>
+            <th><button id="sort-name" onclick="setSort('name')">Name</button></th>
+            <th><button id="sort-size" onclick="setSort('size')">Size</button></th>
+            <th><button id="sort-format" onclick="setSort('format')">Format</button></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </main>
 
-    function updateSortIndicators() {
-      const fields = ['name', 'size', 'format'];
-      fields.forEach(field => {
-        const btn = document.getElementById(`sort-${field}`);
-        if (field === currentSort) {
-          btn.textContent = field.charAt(0).toUpperCase() + field.slice(1) + (currentSortDir === 1 ? ' ↑' : ' ↓');
+    <script>
+      let currentSort = getSortField();
+      let currentSortDir = getSortDir();
+
+      function setSort(field) {
+        if (currentSort === field) {
+          currentSortDir *= -1;
         } else {
-          btn.textContent = field.charAt(0).toUpperCase() + field.slice(1);
+          currentSort = field;
+          currentSortDir = 1;
         }
-      });
-    }
+        const params = new URLSearchParams(window.location.search);
+        params.set('sort', currentSort);
+        params.set('dir', currentSortDir === 1 ? 'asc' : 'desc');
+        window.location.search = params.toString();
+      }
 
-    function getArchiveIdentifier() {
-      const urlParams = new URLSearchParams(window.location.search);
-      return urlParams.get('id');
-    }
-
-    function getSubdirectory() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const path = urlParams.get('path');
-      return path ? decodeURIComponent(path) : '';
-    }
-
-    function getSortField() {
-      const urlParams = new URLSearchParams(window.location.search);
-      return urlParams.get('sort') || 'name';
-    }
-
-    function getSortDir() {
-      const urlParams = new URLSearchParams(window.location.search);
-      return urlParams.get('dir') === 'desc' ? -1 : 1;
-    }
-
-    function humanFileSize(bytes) {
-      const thresh = 1024;
-      if (Math.abs(bytes) < thresh) return bytes + ' B';
-      const units = ['KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-      let u = -1;
-      do {
-        bytes /= thresh;
-        ++u;
-      } while (Math.abs(bytes) >= thresh && u < units.length - 1);
-      return bytes.toFixed(1) + ' ' + units[u];
-    }
-
-    function buildBreadcrumb(identifier, subdir) {
-      const breadcrumbDiv = document.getElementById("breadcrumb");
-      breadcrumbDiv.innerHTML = '';
-
-      const baseLink = document.createElement("a");
-      baseLink.href = `?id=${encodeURIComponent(identifier)}`;
-      baseLink.textContent = identifier;
-      breadcrumbDiv.appendChild(baseLink);
-
-      if (subdir) {
-        const parts = subdir.split("/");
-        let cumulativePath = '';
-
-        parts.forEach((part, index) => {
-          breadcrumbDiv.appendChild(document.createTextNode(" / "));
-          cumulativePath += (index > 0 ? '/' : '') + part;
-
-          const partLink = document.createElement("a");
-          const params = new URLSearchParams(window.location.search);
-          params.set('path', cumulativePath);
-          partLink.href = `?${params.toString()}`;
-          partLink.textContent = part;
-
-          breadcrumbDiv.appendChild(partLink);
+      function updateSortIndicators() {
+        const fields = ['name', 'size', 'format'];
+        fields.forEach(field => {
+          const btn = document.getElementById(`sort-${field}`);
+          if (field === currentSort) {
+            btn.textContent = field.charAt(0).toUpperCase() + field.slice(1) + (currentSortDir === 1 ? ' ↑' : ' ↓');
+          } else {
+            btn.textContent = field.charAt(0).toUpperCase() + field.slice(1);
+          }
         });
       }
-    }
 
-    async function loadFiles(identifier, subdir) {
-      const metadataUrl = `https://archive.org/metadata/${identifier}`;
-      const tableBody = document.querySelector("#file-table tbody");
-      const infoDiv = document.getElementById("info");
-      tableBody.innerHTML = '';
+      function getArchiveIdentifier() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('id');
+      }
 
-      try {
-        const res = await fetch(metadataUrl);
-        const json = await res.json();
+      function getSubdirectory() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const path = urlParams.get('path');
+        return path ? decodeURIComponent(path) : '';
+      }
 
-        buildBreadcrumb(identifier, subdir);
-        updateSortIndicators();
-        infoDiv.textContent = `Showing files for: ${identifier}${subdir ? '/' + subdir : ''}`;
+      function getSortField() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('sort') || 'name';
+      }
 
-        const files = json.files;
-        const dirEntries = [];
-        const filteredFiles = [];
-        const dirMap = new Map();
+      function getSortDir() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('dir') === 'desc' ? -1 : 1;
+      }
 
-        for (const f of files) {
-          if (subdir && !f.name.startsWith(subdir + "/")) continue;
-          const relativePath = subdir ? f.name.substring(subdir.length + 1) : f.name;
+      function humanFileSize(bytes) {
+        const thresh = 1024;
+        if (Math.abs(bytes) < thresh) return bytes + ' B';
+        const units = ['KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+        let u = -1;
+        do {
+          bytes /= thresh;
+          ++u;
+        } while (Math.abs(bytes) >= thresh && u < units.length - 1);
+        return bytes.toFixed(1) + ' ' + units[u];
+      }
 
-          if (relativePath.includes("/")) {
-            const dir = relativePath.split("/")[0];
-            const existing = dirMap.get(dir) || { name: dir, count: 0, size: 0 };
-            existing.count += 1;
-            existing.size += parseInt(f.size) || 0;
-            dirMap.set(dir, existing);
-          } else {
-            filteredFiles.push(f);
-          }
-        }
+      function buildBreadcrumb(identifier, subdir) {
+        const breadcrumbDiv = document.getElementById("breadcrumb");
+        breadcrumbDiv.innerHTML = '';
 
-        dirMap.forEach(dir => dirEntries.push(dir));
+        const baseLink = document.createElement("a");
+        baseLink.href = `?id=${encodeURIComponent(identifier)}`;
+        baseLink.textContent = identifier;
+        breadcrumbDiv.appendChild(baseLink);
 
-        const combined = [
-          ...dirEntries.map(d => ({
-            type: 'dir',
-            name: d.name,
-            size: d.size,
-            format: '',
-            count: d.count
-          })),
-          ...filteredFiles.map(f => ({
-            type: 'file',
-            name: f.name,
-            size: parseInt(f.size) || 0,
-            format: f.format || ''
-          }))
-        ];
+        if (subdir) {
+          const parts = subdir.split("/");
+          let cumulativePath = '';
 
-        combined.sort((a, b) => {
-          if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
+          parts.forEach((part, index) => {
+            breadcrumbDiv.appendChild(document.createTextNode(" / "));
+            cumulativePath += (index > 0 ? '/' : '') + part;
 
-          let valA = a[currentSort] || '';
-          let valB = b[currentSort] || '';
-
-          if (currentSort === 'size') {
-            valA = a.size;
-            valB = b.size;
-          } else {
-            valA = valA.toString().toLowerCase();
-            valB = valB.toString().toLowerCase();
-          }
-
-          return currentSortDir * (valA > valB ? 1 : valA < valB ? -1 : 0);
-        });
-
-        for (const item of combined) {
-          const row = document.createElement("tr");
-          const nameCell = document.createElement("td");
-          const sizeCell = document.createElement("td");
-          const formatCell = document.createElement("td");
-
-          const icon = document.createElement("span");
-          icon.textContent = item.type === 'dir' ? '📁 ' : '📄 ';
-
-          if (item.type === 'dir') {
-            const link = document.createElement("a");
+            const partLink = document.createElement("a");
             const params = new URLSearchParams(window.location.search);
-            params.set('path', subdir ? subdir + '/' + item.name : item.name);
-            link.href = `?${params.toString()}`;
-            link.textContent = `${item.name}/ (${item.count} file${item.count !== 1 ? 's' : ''})`;
-            nameCell.appendChild(icon);
-            nameCell.appendChild(link);
-            sizeCell.textContent = humanFileSize(item.size);
-            formatCell.textContent = '';
-          } else {
-            const link = document.createElement("a");
-            link.href = `https://archive.org/download/${identifier}/${item.name}`;
-            link.textContent = subdir ? item.name.substring(subdir.length + 1) : item.name;
-            nameCell.appendChild(icon);
-            nameCell.appendChild(link);
-            sizeCell.textContent = humanFileSize(item.size);
-            formatCell.textContent = item.format;
-          }
+            params.set('path', cumulativePath);
+            partLink.href = `?${params.toString()}`;
+            partLink.textContent = part;
 
-          row.appendChild(nameCell);
-          row.appendChild(sizeCell);
-          row.appendChild(formatCell);
-          tableBody.appendChild(row);
+            breadcrumbDiv.appendChild(partLink);
+          });
         }
-      } catch (error) {
-        infoDiv.textContent = `Failed to load files for: ${identifier}`;
-        console.error(error);
       }
-    }
 
-    const id = getArchiveIdentifier();
-    const path = getSubdirectory();
-    if (id) {
-      loadFiles(id, path);
-    } else {
-      document.getElementById("info").textContent = "Please provide ?id=archive-identifier in the URL.";
-    }
-  </script>
-</body>
+      async function loadFiles(identifier, subdir) {
+        const metadataUrl = `https://archive.org/metadata/${identifier}`;
+        const table = document.getElementById("file-table");
+        const tableBody = document.querySelector("#file-table tbody");
+        const infoDiv = document.getElementById("info");
+        const breadcrumb = document.getElementById("breadcrumb");
+        const loading = document.getElementById("loading");
+        tableBody.innerHTML = '';
+
+        try {
+          const res = await fetch(metadataUrl);
+          const json = await res.json();
+
+          loading.style.display = 'none';
+          table.style.display = 'table';
+          infoDiv.style.display = 'block';
+          breadcrumb.style.display = 'block';
+
+          buildBreadcrumb(identifier, subdir);
+          updateSortIndicators();
+          infoDiv.textContent = `Showing files for: ${identifier}${subdir ? '/' + subdir : ''}`;
+
+            const files = json.files;
+            const dirEntries = [];
+            const filteredFiles = [];
+            const dirMap = new Map();
+
+            for (const f of files) {
+              if (subdir && !f.name.startsWith(subdir + "/")) continue;
+              const relativePath = subdir ? f.name.substring(subdir.length + 1) : f.name;
+
+              if (relativePath.includes("/")) {
+                const dir = relativePath.split("/")[0];
+                const existing = dirMap.get(dir) || { name: dir, count: 0, size: 0 };
+                existing.count += 1;
+                existing.size += parseInt(f.size) || 0;
+                dirMap.set(dir, existing);
+              } else {
+                filteredFiles.push(f);
+              }
+            }
+
+            dirMap.forEach(dir => dirEntries.push(dir));
+
+            const combined = [
+              ...dirEntries.map(d => ({
+                type: 'dir',
+                name: d.name,
+                size: d.size,
+                format: '',
+                count: d.count
+              })),
+              ...filteredFiles.map(f => ({
+                type: 'file',
+                name: f.name,
+                size: parseInt(f.size) || 0,
+                format: f.format || ''
+              }))
+            ];
+
+            combined.sort((a, b) => {
+              if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
+
+              let valA = a[currentSort] || '';
+              let valB = b[currentSort] || '';
+
+              if (currentSort === 'size') {
+                valA = a.size;
+                valB = b.size;
+              } else {
+                valA = valA.toString().toLowerCase();
+                valB = valB.toString().toLowerCase();
+              }
+
+              return currentSortDir * (valA > valB ? 1 : valA < valB ? -1 : 0);
+            });
+
+            for (const item of combined) {
+              const row = document.createElement("tr");
+              const nameCell = document.createElement("td");
+              const sizeCell = document.createElement("td");
+              const formatCell = document.createElement("td");
+
+              const icon = document.createElement("span");
+              icon.textContent = item.type === 'dir' ? '📁 ' : '📄 ';
+
+              if (item.type === 'dir') {
+                const link = document.createElement("a");
+                const params = new URLSearchParams(window.location.search);
+                params.set('path', subdir ? subdir + '/' + item.name : item.name);
+                link.href = `?${params.toString()}`;
+                link.textContent = `${item.name}/ (${item.count} file${item.count !== 1 ? 's' : ''})`;
+                  nameCell.appendChild(icon);
+                  nameCell.appendChild(link);
+                  sizeCell.textContent = humanFileSize(item.size);
+                  formatCell.textContent = '';
+                } else {
+                  const link = document.createElement("a");
+                  link.href = `https://archive.org/download/${identifier}/${item.name}`;
+                  link.textContent = subdir ? item.name.substring(subdir.length + 1) : item.name;
+                  nameCell.appendChild(icon);
+                  nameCell.appendChild(link);
+                  sizeCell.textContent = humanFileSize(item.size);
+                  formatCell.textContent = item.format;
+                }
+
+                  row.appendChild(nameCell);
+                  row.appendChild(sizeCell);
+                  row.appendChild(formatCell);
+                  tableBody.appendChild(row);
+                }
+          } catch (error) {
+            loading.style.display = 'none';
+            infoDiv.textContent = `Failed to load files for: ${identifier}`;
+            console.error(error);
+          }
+        }
+
+        const id = getArchiveIdentifier();
+        const path = getSubdirectory();
+        if (id) {
+          loadFiles(id, path);
+        } else {
+          document.getElementById("info").textContent = "Please provide ?id=archive-identifier in the URL.";
+        }
+    </script>
+  </body>
 </html>
