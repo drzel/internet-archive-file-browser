@@ -148,109 +148,115 @@
           updateSortIndicators();
           infoDiv.textContent = `Showing files for: ${identifier}${subdir ? '/' + subdir : ''}`;
 
-            const files = json.files;
-            const dirEntries = [];
-            const filteredFiles = [];
-            const dirMap = new Map();
+          const files = json.files;
+          const dirEntries = [];
+          const filteredFiles = [];
+          const dirMap = new Map();
 
-            for (const f of files) {
-              if (subdir && !f.name.startsWith(subdir + "/")) continue;
-              const relativePath = subdir ? f.name.substring(subdir.length + 1) : f.name;
+          for (const f of files) {
+            if (subdir && !f.name.startsWith(subdir + "/")) continue;
+            const relativePath = subdir ? f.name.substring(subdir.length + 1) : f.name;
 
-              if (relativePath.includes("/")) {
-                const dir = relativePath.split("/")[0];
-                const existing = dirMap.get(dir) || { name: dir, count: 0, size: 0 };
-                existing.count += 1;
-                existing.size += parseInt(f.size) || 0;
-                dirMap.set(dir, existing);
-              } else {
-                filteredFiles.push(f);
-              }
+            if (relativePath.includes("/")) {
+              const dir = relativePath.split("/")[0];
+              const existing = dirMap.get(dir) || { name: dir, count: 0, size: 0 };
+              existing.count += 1;
+              existing.size += parseInt(f.size) || 0;
+              dirMap.set(dir, existing);
+            } else {
+              filteredFiles.push(f);
+            }
+          }
+
+          dirMap.forEach(dir => dirEntries.push(dir));
+
+          const combined = [
+            ...dirEntries.map(d => ({
+              type: 'dir',
+              name: d.name,
+              size: d.size,
+              format: '',
+              count: d.count
+            })),
+            ...filteredFiles.map(f => ({
+              type: 'file',
+              name: f.name,
+              size: parseInt(f.size) || 0,
+              format: f.format || ''
+            }))
+          ];
+
+          combined.sort((a, b) => {
+            if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
+
+            let valA = a[currentSort] || '';
+            let valB = b[currentSort] || '';
+
+            if (currentSort === 'size') {
+              valA = a.size;
+              valB = b.size;
+            } else {
+              valA = valA.toString().toLowerCase();
+              valB = valB.toString().toLowerCase();
             }
 
-            dirMap.forEach(dir => dirEntries.push(dir));
+            return currentSortDir * (valA > valB ? 1 : valA < valB ? -1 : 0);
+          });
 
-            const combined = [
-              ...dirEntries.map(d => ({
-                type: 'dir',
-                name: d.name,
-                size: d.size,
-                format: '',
-                count: d.count
-              })),
-              ...filteredFiles.map(f => ({
-                type: 'file',
-                name: f.name,
-                size: parseInt(f.size) || 0,
-                format: f.format || ''
-              }))
-            ];
+          for (const item of combined) {
+            const row = document.createElement("tr");
+            const nameCell = document.createElement("td");
+            const sizeCell = document.createElement("td");
+            const formatCell = document.createElement("td");
 
-            combined.sort((a, b) => {
-              if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
+            const icon = document.createElement("span");
+            icon.textContent = item.type === 'dir' ? '📁 ' : '📄 ';
 
-              let valA = a[currentSort] || '';
-              let valB = b[currentSort] || '';
+            nameCell.appendChild(icon);
 
-              if (currentSort === 'size') {
-                valA = a.size;
-                valB = b.size;
-              } else {
-                valA = valA.toString().toLowerCase();
-                valB = valB.toString().toLowerCase();
-              }
+            if (item.type === 'dir') {
+              const link = document.createElement("a");
+              const params = new URLSearchParams(window.location.search);
+              params.set('path', subdir ? subdir + '/' + item.name : item.name);
+              link.href = `?${params.toString()}`;
+              link.textContent = `${item.name}/`;
+              nameCell.appendChild(link);
 
-              return currentSortDir * (valA > valB ? 1 : valA < valB ? -1 : 0);
-            });
+              const countSpan = document.createElement("span");
+              countSpan.style.marginLeft = "0.5em";
+              countSpan.textContent = `(${item.count} file${item.count !== 1 ? 's' : ''})`;
+              nameCell.appendChild(countSpan);
 
-            for (const item of combined) {
-              const row = document.createElement("tr");
-              const nameCell = document.createElement("td");
-              const sizeCell = document.createElement("td");
-              const formatCell = document.createElement("td");
+              sizeCell.textContent = humanFileSize(item.size);
+              formatCell.textContent = '';
+            } else {
+              const link = document.createElement("a");
+              link.href = `https://archive.org/download/${identifier}/${item.name}`;
+              link.textContent = subdir ? item.name.substring(subdir.length + 1) : item.name;
+              nameCell.appendChild(link);
+              sizeCell.textContent = humanFileSize(item.size);
+              formatCell.textContent = item.format;
+            }
 
-              const icon = document.createElement("span");
-              icon.textContent = item.type === 'dir' ? '📁 ' : '📄 ';
-
-              if (item.type === 'dir') {
-                const link = document.createElement("a");
-                const params = new URLSearchParams(window.location.search);
-                params.set('path', subdir ? subdir + '/' + item.name : item.name);
-                link.href = `?${params.toString()}`;
-                link.textContent = `${item.name}/ (${item.count} file${item.count !== 1 ? 's' : ''})`;
-                  nameCell.appendChild(icon);
-                  nameCell.appendChild(link);
-                  sizeCell.textContent = humanFileSize(item.size);
-                  formatCell.textContent = '';
-                } else {
-                  const link = document.createElement("a");
-                  link.href = `https://archive.org/download/${identifier}/${item.name}`;
-                  link.textContent = subdir ? item.name.substring(subdir.length + 1) : item.name;
-                  nameCell.appendChild(icon);
-                  nameCell.appendChild(link);
-                  sizeCell.textContent = humanFileSize(item.size);
-                  formatCell.textContent = item.format;
-                }
-
-                  row.appendChild(nameCell);
-                  row.appendChild(sizeCell);
-                  row.appendChild(formatCell);
-                  tableBody.appendChild(row);
-                }
-          } catch (error) {
-            loading.style.display = 'none';
-            infoDiv.textContent = `Failed to load files for: ${identifier}`;
-            console.error(error);
+            row.appendChild(nameCell);
+            row.appendChild(sizeCell);
+            row.appendChild(formatCell);
+            tableBody.appendChild(row);
           }
+        } catch (error) {
+          loading.style.display = 'none';
+          infoDiv.textContent = `Failed to load files for: ${identifier}`;
+          console.error(error);
         }
+      }
 
-        const id = getArchiveIdentifier();
-        const path = getSubdirectory();
-        if (id) {
-          loadFiles(id, path);
-        } else {
-          document.getElementById("info").textContent = "Please provide ?id=archive-identifier in the URL.";
-        }
+      const id = getArchiveIdentifier();
+      const path = getSubdirectory();
+      if (id) {
+        loadFiles(id, path);
+      } else {
+        document.getElementById("info").textContent = "Please provide ?id=archive-identifier in the URL.";
+      }
     </script>
   </body>
 </html>
