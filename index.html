@@ -131,7 +131,11 @@
           const relativePath = subdir ? f.name.substring(subdir.length + 1) : f.name;
           if (relativePath.includes("/")) {
             const dir = relativePath.split("/")[0];
-            shownDirs.set(dir, (shownDirs.get(dir) || 0) + 1);
+            const existing = shownDirs.get(dir) || { count: 0, size: 0 };
+            shownDirs.set(dir, {
+              count: existing.count + 1,
+              size: existing.size + (parseInt(f.size) || 0)
+            });
           }
         });
 
@@ -141,7 +145,7 @@
           return !remaining.includes("/");
         });
 
-        shownDirs.forEach((count, dir) => {
+        shownDirs.forEach((info, dir) => {
           const row = document.createElement("tr");
           const nameCell = document.createElement("td");
           const sizeCell = document.createElement("td");
@@ -151,9 +155,10 @@
           const params = new URLSearchParams(window.location.search);
           params.set('path', subdir ? subdir + '/' + dir : dir);
           link.href = `?${params.toString()}`;
-          link.textContent = `${dir}/ (${count} file${count !== 1 ? 's' : ''})`;
+          link.textContent = `${dir}/ (${info.count} file${info.count !== 1 ? 's' : ''})`;
 
           nameCell.appendChild(link);
+          sizeCell.textContent = humanFileSize(info.size);
           row.appendChild(nameCell);
           row.appendChild(sizeCell);
           row.appendChild(formatCell);
