@@ -124,28 +124,24 @@
         infoDiv.textContent = `Showing files for: ${identifier}${subdir ? '/' + subdir : ''}`;
 
         const files = json.files;
-        const shownDirs = new Set();
+        const shownDirs = new Map();
 
-        const filteredFiles = files.filter(f => {
-          const parts = f.name.split("/");
-          if (subdir) {
-            if (!f.name.startsWith(subdir + "/")) return false;
-            const remaining = f.name.substring(subdir.length + 1);
-            if (remaining.includes("/")) {
-              shownDirs.add(remaining.split("/")[0]);
-              return false;
-            }
-            return true;
-          } else {
-            if (f.name.includes("/")) {
-              shownDirs.add(f.name.split("/")[0]);
-              return false;
-            }
-            return true;
+        files.forEach(f => {
+          if (subdir && !f.name.startsWith(subdir + "/")) return;
+          const relativePath = subdir ? f.name.substring(subdir.length + 1) : f.name;
+          if (relativePath.includes("/")) {
+            const dir = relativePath.split("/")[0];
+            shownDirs.set(dir, (shownDirs.get(dir) || 0) + 1);
           }
         });
 
-        shownDirs.forEach(dir => {
+        const filteredFiles = files.filter(f => {
+          if (subdir && !f.name.startsWith(subdir + "/")) return false;
+          const remaining = subdir ? f.name.substring(subdir.length + 1) : f.name;
+          return !remaining.includes("/");
+        });
+
+        shownDirs.forEach((count, dir) => {
           const row = document.createElement("tr");
           const nameCell = document.createElement("td");
           const sizeCell = document.createElement("td");
@@ -155,7 +151,7 @@
           const params = new URLSearchParams(window.location.search);
           params.set('path', subdir ? subdir + '/' + dir : dir);
           link.href = `?${params.toString()}`;
-          link.textContent = dir + "/";
+          link.textContent = `${dir}/ (${count} file${count !== 1 ? 's' : ''})`;
 
           nameCell.appendChild(link);
           row.appendChild(nameCell);
