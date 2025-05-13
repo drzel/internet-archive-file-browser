@@ -10,7 +10,7 @@
         display: block;
         height: 1.5em;
       }
-      #file-table, #breadcrumb, #info {
+      #file-table, #breadcrumb, #info, #identifier-form {
         display: none;
       }
       #loading {
@@ -22,6 +22,14 @@
     <main class="container">
       <h1>Archive.org File Browser</h1>
       <div id="loading"><span aria-busy="true">Loading...</span></div>
+
+      <form id="identifier-form">
+        <fieldset role="group">
+          <input type="text" id="identifier-input" name="id" placeholder="e.g. fortressone-demos" required>
+          <input type="submit" value="Browse" />
+        </fieldset>
+      </form>
+
       <div id="breadcrumb">&nbsp;</div>
       <div id="info">&nbsp;</div>
       <table class="striped" id="file-table">
@@ -245,6 +253,7 @@
           }
         } catch (error) {
           loading.style.display = 'none';
+          infoDiv.style.display = 'block';
           infoDiv.textContent = `Failed to load files for: ${identifier}`;
           console.error(error);
         }
@@ -253,9 +262,20 @@
       const id = getArchiveIdentifier();
       const path = getSubdirectory();
       if (id) {
+        document.getElementById("identifier-form").style.display = "none";
         loadFiles(id, path);
       } else {
-        document.getElementById("info").textContent = "Please provide ?id=archive-identifier in the URL.";
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("identifier-form").style.display = "block";
+        document.getElementById("identifier-form").addEventListener("submit", function (e) {
+          e.preventDefault();
+          const newId = document.getElementById("identifier-input").value.trim();
+          if (newId) {
+            const params = new URLSearchParams(window.location.search);
+            params.set("id", newId);
+            window.location.search = params.toString();
+          }
+        });
       }
     </script>
   </body>
