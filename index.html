@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8">
-    <title>Archive.org File Browser</title>
+    <title>Internet Archive File Browser</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
     <style>
       #breadcrumb:empty::before, #info:empty::before {
@@ -154,6 +154,7 @@
 
           buildBreadcrumb(identifier, subdir);
           updateSortIndicators();
+          infoDiv.textContent = `Showing files for: ${identifier}${subdir ? '/' + subdir : ''}`;
 
           const files = json.files;
           const dirEntries = [];
