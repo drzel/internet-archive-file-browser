@@ -3,21 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <title>Archive.org File Browser</title>
+  <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@1.5.10/css/pico.min.css">
 </head>
 <body>
-  <h1>Archive.org File Browser</h1>
-  <div id="breadcrumb"></div>
-  <div id="info"></div>
-  <table id="file-table" border="1">
-    <thead>
-      <tr>
-        <th><button id="sort-name" onclick="setSort('name')">Name</button></th>
-        <th><button id="sort-size" onclick="setSort('size')">Size</button></th>
-        <th><button id="sort-format" onclick="setSort('format')">Format</button></th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <main class="container">
+    <h1>Archive.org File Browser</h1>
+    <div id="breadcrumb"></div>
+    <div id="info"></div>
+    <table id="file-table">
+      <thead>
+        <tr>
+          <th><button id="sort-name" onclick="setSort('name')">Name</button></th>
+          <th><button id="sort-size" onclick="setSort('size')">Size</button></th>
+          <th><button id="sort-format" onclick="setSort('format')">Format</button></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </main>
 
   <script>
     let currentSort = getSortField();
