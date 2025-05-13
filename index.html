@@ -6,6 +6,7 @@
 </head>
 <body>
   <h1>Archive.org File Browser</h1>
+  <div id="breadcrumb"></div>
   <div id="info"></div>
   <table id="file-table" border="1">
     <thead>
@@ -30,21 +31,48 @@
       return path ? decodeURIComponent(path) : '';
     }
 
+    function buildBreadcrumb(identifier, subdir) {
+      const breadcrumbDiv = document.getElementById("breadcrumb");
+      breadcrumbDiv.innerHTML = '';
+
+      const baseLink = document.createElement("a");
+      baseLink.href = `?id=${encodeURIComponent(identifier)}`;
+      baseLink.textContent = identifier;
+      breadcrumbDiv.appendChild(baseLink);
+
+      if (subdir) {
+        const parts = subdir.split("/");
+        let cumulativePath = '';
+
+        parts.forEach((part, index) => {
+          breadcrumbDiv.appendChild(document.createTextNode(" / "));
+          cumulativePath += (index > 0 ? '/' : '') + part;
+
+          const partLink = document.createElement("a");
+          partLink.href = `?id=${encodeURIComponent(identifier)}&path=${encodeURIComponent(cumulativePath)}`;
+          partLink.textContent = part;
+
+          breadcrumbDiv.appendChild(partLink);
+        });
+      }
+    }
+
     async function loadFiles(identifier, subdir) {
       const metadataUrl = `https://archive.org/metadata/${identifier}`;
       const tableBody = document.querySelector("#file-table tbody");
       const infoDiv = document.getElementById("info");
+      tableBody.innerHTML = '';
 
       try {
         const res = await fetch(metadataUrl);
         const json = await res.json();
 
+        buildBreadcrumb(identifier, subdir);
         infoDiv.textContent = `Showing files for: ${identifier}${subdir ? '/' + subdir : ''}`;
 
         const files = json.files;
         const shownDirs = new Set();
 
-        // Filter to only show files in the current subdir (not nested)
         const filteredFiles = files.filter(f => {
           const parts = f.name.split("/");
           if (subdir) {
@@ -64,7 +92,6 @@
           }
         });
 
-        // Show subdirectories as links
         shownDirs.forEach(dir => {
           const row = document.createElement("tr");
           const nameCell = document.createElement("td");
@@ -82,7 +109,6 @@
           tableBody.appendChild(row);
         });
 
-        // Show actual files in the current directory
         filteredFiles.sort((a, b) => a.name.localeCompare(b.name));
 
         for (const file of filteredFiles) {
