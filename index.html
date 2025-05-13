@@ -20,8 +20,8 @@
   </table>
 
   <script>
-    let currentSort = 'name';
-    let currentSortDir = 1; // 1 for ascending, -1 for descending
+    let currentSort = getSortField();
+    let currentSortDir = getSortDir();
 
     function setSort(field) {
       if (currentSort === field) {
@@ -30,7 +30,10 @@
         currentSort = field;
         currentSortDir = 1;
       }
-      loadFiles(getArchiveIdentifier(), getSubdirectory());
+      const params = new URLSearchParams(window.location.search);
+      params.set('sort', currentSort);
+      params.set('dir', currentSortDir === 1 ? 'asc' : 'desc');
+      window.location.search = params.toString();
     }
 
     function getArchiveIdentifier() {
@@ -42,6 +45,16 @@
       const urlParams = new URLSearchParams(window.location.search);
       const path = urlParams.get('path');
       return path ? decodeURIComponent(path) : '';
+    }
+
+    function getSortField() {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get('sort') || 'name';
+    }
+
+    function getSortDir() {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get('dir') === 'desc' ? -1 : 1;
     }
 
     function buildBreadcrumb(identifier, subdir) {
@@ -62,7 +75,9 @@
           cumulativePath += (index > 0 ? '/' : '') + part;
 
           const partLink = document.createElement("a");
-          partLink.href = `?id=${encodeURIComponent(identifier)}&path=${encodeURIComponent(cumulativePath)}`;
+          const params = new URLSearchParams(window.location.search);
+          params.set('path', cumulativePath);
+          partLink.href = `?${params.toString()}`;
           partLink.textContent = part;
 
           breadcrumbDiv.appendChild(partLink);
@@ -112,7 +127,9 @@
           const formatCell = document.createElement("td");
 
           const link = document.createElement("a");
-          link.href = `?id=${encodeURIComponent(identifier)}&path=${encodeURIComponent(subdir ? subdir + '/' + dir : dir)}`;
+          const params = new URLSearchParams(window.location.search);
+          params.set('path', subdir ? subdir + '/' + dir : dir);
+          link.href = `?${params.toString()}`;
           link.textContent = dir + "/";
 
           nameCell.appendChild(link);
