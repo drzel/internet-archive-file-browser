@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Archive.org File Browser</title>
+  </head>
+  <body>
+    <h1>Archive.org File Browser</h1>
+    <div id="info"></div>
+    <table id="file-table" border="1">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Size</th>
+          <th>Format</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <script>
+      function getArchiveIdentifier() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('id');
+      }
+
+      async function loadFiles(identifier) {
+        const metadataUrl = `https://archive.org/metadata/${identifier}`;
+        const tableBody = document.querySelector("#file-table tbody");
+        const infoDiv = document.getElementById("info");
+
+        try {
+          const res = await fetch(metadataUrl);
+          const json = await res.json();
+
+          infoDiv.textContent = `Showing files for: ${identifier}`;
+
+          const files = json.files;
+          files.sort((a, b) => a.name.localeCompare(b.name)); // Default sort by name
+
+          for (const file of files) {
+            const row = document.createElement("tr");
+            const nameCell = document.createElement("td");
+            const sizeCell = document.createElement("td");
+            const formatCell = document.createElement("td");
+
+            const link = document.createElement("a");
+            link.href = `https://archive.org/download/${identifier}/${file.name}`;
+            link.textContent = file.name;
+
+            nameCell.appendChild(link);
+            sizeCell.textContent = file.size || "";
+            formatCell.textContent = file.format || "";
+
+            row.appendChild(nameCell);
+            row.appendChild(sizeCell);
+            row.appendChild(formatCell);
+            tableBody.appendChild(row);
+          }
+        } catch (error) {
+          infoDiv.textContent = `Failed to load files for: ${identifier}`;
+          console.error(error);
+        }
+      }
+
+      const id = getArchiveIdentifier();
+      if (id) {
+        loadFiles(id);
+      } else {
+        document.getElementById("info").textContent = "Please provide ?id=archive-identifier in the URL.";
+      }
+    </script>
+  </body>
+</html>
