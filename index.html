@@ -11,9 +11,9 @@
   <table id="file-table" border="1">
     <thead>
       <tr>
-        <th><button onclick="setSort('name')">Name</button></th>
-        <th><button onclick="setSort('size')">Size</button></th>
-        <th><button onclick="setSort('format')">Format</button></th>
+        <th><button id="sort-name" onclick="setSort('name')">Name</button></th>
+        <th><button id="sort-size" onclick="setSort('size')">Size</button></th>
+        <th><button id="sort-format" onclick="setSort('format')">Format</button></th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -34,6 +34,18 @@
       params.set('sort', currentSort);
       params.set('dir', currentSortDir === 1 ? 'asc' : 'desc');
       window.location.search = params.toString();
+    }
+
+    function updateSortIndicators() {
+      const fields = ['name', 'size', 'format'];
+      fields.forEach(field => {
+        const btn = document.getElementById(`sort-${field}`);
+        if (field === currentSort) {
+          btn.textContent = field.charAt(0).toUpperCase() + field.slice(1) + (currentSortDir === 1 ? ' ↑' : ' ↓');
+        } else {
+          btn.textContent = field.charAt(0).toUpperCase() + field.slice(1);
+        }
+      });
     }
 
     function getArchiveIdentifier() {
@@ -96,6 +108,7 @@
         const json = await res.json();
 
         buildBreadcrumb(identifier, subdir);
+        updateSortIndicators();
         infoDiv.textContent = `Showing files for: ${identifier}${subdir ? '/' + subdir : ''}`;
 
         const files = json.files;
