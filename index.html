@@ -124,54 +124,50 @@
         infoDiv.textContent = `Showing files for: ${identifier}${subdir ? '/' + subdir : ''}`;
 
         const files = json.files;
-        const shownDirs = new Map();
+        const dirEntries = [];
+        const filteredFiles = [];
+        const dirMap = new Map();
 
-        files.forEach(f => {
-          if (subdir && !f.name.startsWith(subdir + "/")) return;
+        for (const f of files) {
+          if (subdir && !f.name.startsWith(subdir + "/")) continue;
           const relativePath = subdir ? f.name.substring(subdir.length + 1) : f.name;
+
           if (relativePath.includes("/")) {
             const dir = relativePath.split("/")[0];
-            const existing = shownDirs.get(dir) || { count: 0, size: 0 };
-            shownDirs.set(dir, {
-              count: existing.count + 1,
-              size: existing.size + (parseInt(f.size) || 0)
-            });
+            const existing = dirMap.get(dir) || { name: dir, count: 0, size: 0 };
+            existing.count += 1;
+            existing.size += parseInt(f.size) || 0;
+            dirMap.set(dir, existing);
+          } else {
+            filteredFiles.push(f);
           }
-        });
+        }
 
-        const filteredFiles = files.filter(f => {
-          if (subdir && !f.name.startsWith(subdir + "/")) return false;
-          const remaining = subdir ? f.name.substring(subdir.length + 1) : f.name;
-          return !remaining.includes("/");
-        });
+        dirMap.forEach(dir => dirEntries.push(dir));
 
-        shownDirs.forEach((info, dir) => {
-          const row = document.createElement("tr");
-          const nameCell = document.createElement("td");
-          const sizeCell = document.createElement("td");
-          const formatCell = document.createElement("td");
+        const combined = [
+          ...dirEntries.map(d => ({
+            type: 'dir',
+            name: d.name,
+            size: d.size,
+            format: '',
+            count: d.count
+          })),
+          ...filteredFiles.map(f => ({
+            type: 'file',
+            name: f.name,
+            size: parseInt(f.size) || 0,
+            format: f.format || ''
+          }))
+        ];
 
-          const link = document.createElement("a");
-          const params = new URLSearchParams(window.location.search);
-          params.set('path', subdir ? subdir + '/' + dir : dir);
-          link.href = `?${params.toString()}`;
-          link.textContent = `${dir}/ (${info.count} file${info.count !== 1 ? 's' : ''})`;
-
-          nameCell.appendChild(link);
-          sizeCell.textContent = humanFileSize(info.size);
-          row.appendChild(nameCell);
-          row.appendChild(sizeCell);
-          row.appendChild(formatCell);
-          tableBody.appendChild(row);
-        });
-
-        filteredFiles.sort((a, b) => {
+        combined.sort((a, b) => {
           let valA = a[currentSort] || '';
           let valB = b[currentSort] || '';
 
           if (currentSort === 'size') {
-            valA = parseInt(valA) || 0;
-            valB = parseInt(valB) || 0;
+            valA = a.size;
+            valB = b.size;
           } else {
             valA = valA.toString().toLowerCase();
             valB = valB.toString().toLowerCase();
@@ -180,19 +176,29 @@
           return currentSortDir * (valA > valB ? 1 : valA < valB ? -1 : 0);
         });
 
-        for (const file of filteredFiles) {
+        for (const item of combined) {
           const row = document.createElement("tr");
           const nameCell = document.createElement("td");
           const sizeCell = document.createElement("td");
           const formatCell = document.createElement("td");
 
-          const link = document.createElement("a");
-          link.href = `https://archive.org/download/${identifier}/${file.name}`;
-          link.textContent = subdir ? file.name.substring(subdir.length + 1) : file.name;
-
-          nameCell.appendChild(link);
-          sizeCell.textContent = file.size ? humanFileSize(parseInt(file.size)) : "";
-          formatCell.textContent = file.format || "";
+          if (item.type === 'dir') {
+            const link = document.createElement("a");
+            const params = new URLSearchParams(window.location.search);
+            params.set('path', subdir ? subdir + '/' + item.name : item.name);
+            link.href = `?${params.toString()}`;
+            link.textContent = `${item.name}/ (${item.count} file${item.count !== 1 ? 's' : ''})`;
+            nameCell.appendChild(link);
+            sizeCell.textContent = humanFileSize(item.size);
+            formatCell.textContent = '';
+          } else {
+            const link = document.createElement("a");
+            link.href = `https://archive.org/download/${identifier}/${item.name}`;
+            link.textContent = subdir ? item.name.substring(subdir.length + 1) : item.name;
+            nameCell.appendChild(link);
+            sizeCell.textContent = humanFileSize(item.size);
+            formatCell.textContent = item.format;
+          }
 
           row.appendChild(nameCell);
           row.appendChild(sizeCell);
