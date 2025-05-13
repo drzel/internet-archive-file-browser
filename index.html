@@ -162,6 +162,8 @@
         ];
 
         combined.sort((a, b) => {
+          if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
+
           let valA = a[currentSort] || '';
           let valB = b[currentSort] || '';
 
@@ -182,12 +184,16 @@
           const sizeCell = document.createElement("td");
           const formatCell = document.createElement("td");
 
+          const icon = document.createElement("span");
+          icon.textContent = item.type === 'dir' ? '📁 ' : '📄 ';
+
           if (item.type === 'dir') {
             const link = document.createElement("a");
             const params = new URLSearchParams(window.location.search);
             params.set('path', subdir ? subdir + '/' + item.name : item.name);
             link.href = `?${params.toString()}`;
             link.textContent = `${item.name}/ (${item.count} file${item.count !== 1 ? 's' : ''})`;
+            nameCell.appendChild(icon);
             nameCell.appendChild(link);
             sizeCell.textContent = humanFileSize(item.size);
             formatCell.textContent = '';
@@ -195,6 +201,7 @@
             const link = document.createElement("a");
             link.href = `https://archive.org/download/${identifier}/${item.name}`;
             link.textContent = subdir ? item.name.substring(subdir.length + 1) : item.name;
+            nameCell.appendChild(icon);
             nameCell.appendChild(link);
             sizeCell.textContent = humanFileSize(item.size);
             formatCell.textContent = item.format;
