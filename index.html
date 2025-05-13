@@ -11,15 +11,28 @@
   <table id="file-table" border="1">
     <thead>
       <tr>
-        <th>Name</th>
-        <th>Size</th>
-        <th>Format</th>
+        <th><button onclick="setSort('name')">Name</button></th>
+        <th><button onclick="setSort('size')">Size</button></th>
+        <th><button onclick="setSort('format')">Format</button></th>
       </tr>
     </thead>
     <tbody></tbody>
   </table>
 
   <script>
+    let currentSort = 'name';
+    let currentSortDir = 1; // 1 for ascending, -1 for descending
+
+    function setSort(field) {
+      if (currentSort === field) {
+        currentSortDir *= -1;
+      } else {
+        currentSort = field;
+        currentSortDir = 1;
+      }
+      loadFiles(getArchiveIdentifier(), getSubdirectory());
+    }
+
     function getArchiveIdentifier() {
       const urlParams = new URLSearchParams(window.location.search);
       return urlParams.get('id');
@@ -109,7 +122,20 @@
           tableBody.appendChild(row);
         });
 
-        filteredFiles.sort((a, b) => a.name.localeCompare(b.name));
+        filteredFiles.sort((a, b) => {
+          let valA = a[currentSort] || '';
+          let valB = b[currentSort] || '';
+
+          if (currentSort === 'size') {
+            valA = parseInt(valA) || 0;
+            valB = parseInt(valB) || 0;
+          } else {
+            valA = valA.toString().toLowerCase();
+            valB = valB.toString().toLowerCase();
+          }
+
+          return currentSortDir * (valA > valB ? 1 : valA < valB ? -1 : 0);
+        });
 
         for (const file of filteredFiles) {
           const row = document.createElement("tr");
