@@ -171,7 +171,7 @@
           // Render Items table
           if (itemsJson.response && itemsJson.response.docs.length > 0) {
             const itemsHeading = document.createElement('h2');
-            itemsHeading.innerHTML = '<span id="items-toggle" style="cursor: pointer; user-select: none;">▶ Items</span>';
+            itemsHeading.innerHTML = `<span id="items-toggle" style="cursor: pointer; user-select: none;">▶ Items (${itemsJson.response.docs.length})</span>`;
             const itemsTable = document.createElement('table');
             itemsTable.className = 'striped';
 
@@ -222,7 +222,7 @@
           // Render Collections (Categories) table
           if (collectionsJson.response && collectionsJson.response.docs.length > 0) {
             const categoriesHeading = document.createElement('h2');
-            categoriesHeading.innerHTML = '<span id="collections-toggle" style="cursor: pointer; user-select: none;">▶ Collections</span>';
+            categoriesHeading.innerHTML = `<span id="collections-toggle" style="cursor: pointer; user-select: none;">▶ Collections (${collectionsJson.response.docs.length})</span>`;
             const collectionsTable = document.createElement('table');
             collectionsTable.className = 'striped';
 
