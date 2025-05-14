@@ -299,6 +299,9 @@
             }))
           ];
 
+          const totalFileCount = combined.reduce((sum, item) => sum + (item.type === 'file' ? 1 : item.count || 0), 0);
+          document.getElementById("files-heading").textContent = `Files (${totalFileCount})`;
+
           combined.sort((a, b) => {
             if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
 
