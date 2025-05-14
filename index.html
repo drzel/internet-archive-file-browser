@@ -32,6 +32,7 @@
 
       <div id="breadcrumb">&nbsp;</div>
       <div id="info">&nbsp;</div>
+      <h2 id="files-heading" style="display: none;">Files</h2>
       <table class="striped" id="file-table">
         <thead>
           <tr>
@@ -158,6 +159,7 @@
           const itemsJson = await itemsRes.json();
 
           loading.style.display = 'none';
+          document.getElementById("files-heading").style.display = 'block';
           table.style.display = 'table';
           infoDiv.style.display = 'block';
           breadcrumb.style.display = 'block';
