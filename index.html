@@ -135,117 +135,117 @@
       }
 
       async function loadFiles(identifier, subdir) {
-  const metadataUrl = `https://archive.org/metadata/${identifier}`;
-  const collectionsUrl = `https://archive.org/advancedsearch.php?q=collection:${identifier}+AND+mediatype:collection&fl[]=identifier&fl[]=title&fl[]=week&rows=1000&sort[]=week+desc&output=json`;
-  const itemsUrl = `https://archive.org/advancedsearch.php?q=collection:${identifier}+AND+mediatype:(movies OR texts OR audio OR data)&fl[]=identifier&fl[]=title&fl[]=date&fl[]=week&fl[]=downloads&fl[]=mediatype&rows=1000&output=json`;
+        const metadataUrl = `https://archive.org/metadata/${identifier}`;
+        const collectionsUrl = `https://archive.org/advancedsearch.php?q=collection:${identifier}+AND+mediatype:collection&fl[]=identifier&fl[]=title&fl[]=week&rows=1000&sort[]=week+desc&output=json`;
+        const itemsUrl = `https://archive.org/advancedsearch.php?q=collection:${identifier}+AND+mediatype:(movies OR texts OR audio OR data)&fl[]=identifier&fl[]=title&fl[]=date&fl[]=week&fl[]=downloads&fl[]=mediatype&rows=1000&output=json`;
 
-  const table = document.getElementById("file-table");
-  const tableBody = document.querySelector("#file-table tbody");
-  const infoDiv = document.getElementById("info");
-  const breadcrumb = document.getElementById("breadcrumb");
-  const loading = document.getElementById("loading");
-  tableBody.innerHTML = '';
+        const table = document.getElementById("file-table");
+        const tableBody = document.querySelector("#file-table tbody");
+        const infoDiv = document.getElementById("info");
+        const breadcrumb = document.getElementById("breadcrumb");
+        const loading = document.getElementById("loading");
+        tableBody.innerHTML = '';
 
-  try {
-    const [metaRes, collectionsRes, itemsRes] = await Promise.all([
-      fetch(metadataUrl),
-      fetch(collectionsUrl),
-      fetch(itemsUrl)
-    ]);
+        try {
+          const [metaRes, collectionsRes, itemsRes] = await Promise.all([
+            fetch(metadataUrl),
+            fetch(collectionsUrl),
+            fetch(itemsUrl)
+          ]);
 
-    const json = await metaRes.json();
-    const collectionsJson = await collectionsRes.json();
-    const itemsJson = await itemsRes.json();
+          const json = await metaRes.json();
+          const collectionsJson = await collectionsRes.json();
+          const itemsJson = await itemsRes.json();
 
-    loading.style.display = 'none';
-    table.style.display = 'table';
-    infoDiv.style.display = 'block';
-    breadcrumb.style.display = 'block';
+          loading.style.display = 'none';
+          table.style.display = 'table';
+          infoDiv.style.display = 'block';
+          breadcrumb.style.display = 'block';
 
-    buildBreadcrumb(identifier, subdir);
-    updateSortIndicators();
-    infoDiv.textContent = `Showing files for: ${identifier}${subdir ? '/' + subdir : ''}`;
+          buildBreadcrumb(identifier, subdir);
+          updateSortIndicators();
+          infoDiv.textContent = `Showing files for: ${identifier}${subdir ? '/' + subdir : ''}`;
 
-    // Render Items table
-    if (itemsJson.response && itemsJson.response.docs.length > 0) {
-      const itemsHeading = document.createElement('h2');
-      itemsHeading.textContent = 'Items';
-      const itemsTable = document.createElement('table');
-      itemsTable.className = 'striped';
+          // Render Items table
+          if (itemsJson.response && itemsJson.response.docs.length > 0) {
+            const itemsHeading = document.createElement('h2');
+            itemsHeading.textContent = 'Items';
+            const itemsTable = document.createElement('table');
+            itemsTable.className = 'striped';
 
-      const thead = document.createElement('thead');
-      const headRow = document.createElement('tr');
-      headRow.innerHTML = '<th>Title</th><th>Date</th><th>Views (week)</th><th>Downloads</th><th>Media Type</th>';
-      thead.appendChild(headRow);
+            const thead = document.createElement('thead');
+            const headRow = document.createElement('tr');
+            headRow.innerHTML = '<th>Title</th><th>Date</th><th>Views (week)</th><th>Downloads</th><th>Media Type</th>';
+            thead.appendChild(headRow);
 
-      const tbody = document.createElement('tbody');
-      for (const doc of itemsJson.response.docs) {
-        const row = document.createElement('tr');
+            const tbody = document.createElement('tbody');
+            for (const doc of itemsJson.response.docs) {
+              const row = document.createElement('tr');
 
-        const cell1 = document.createElement('td');
-        const cell2 = document.createElement('td');
-        const cell3 = document.createElement('td');
-        const cell4 = document.createElement('td');
-        const cell5 = document.createElement('td');
+              const cell1 = document.createElement('td');
+              const cell2 = document.createElement('td');
+              const cell3 = document.createElement('td');
+              const cell4 = document.createElement('td');
+              const cell5 = document.createElement('td');
 
-        const link = document.createElement('a');
-        link.href = `?id=${encodeURIComponent(doc.identifier)}`;
-        link.textContent = doc.title || doc.identifier;
-        cell1.appendChild(link);
-        cell2.textContent = doc.date || '–';
-        cell3.textContent = doc.week || '–';
-        cell4.textContent = doc.downloads || '–';
-        cell5.textContent = doc.mediatype || '–';
+              const link = document.createElement('a');
+              link.href = `?id=${encodeURIComponent(doc.identifier)}`;
+              link.textContent = doc.title || doc.identifier;
+              cell1.appendChild(link);
+              cell2.textContent = doc.date || '–';
+              cell3.textContent = doc.week || '–';
+              cell4.textContent = doc.downloads || '–';
+              cell5.textContent = doc.mediatype || '–';
 
-        row.appendChild(cell1);
-        row.appendChild(cell2);
-        row.appendChild(cell3);
-        row.appendChild(cell4);
-        row.appendChild(cell5);
-        tbody.appendChild(row);
-      }
+              row.appendChild(cell1);
+              row.appendChild(cell2);
+              row.appendChild(cell3);
+              row.appendChild(cell4);
+              row.appendChild(cell5);
+              tbody.appendChild(row);
+            }
 
-      itemsTable.appendChild(thead);
-      itemsTable.appendChild(tbody);
-      table.after(itemsHeading);
-      itemsHeading.after(itemsTable);
-    }
+            itemsTable.appendChild(thead);
+            itemsTable.appendChild(tbody);
+            table.after(itemsHeading);
+            itemsHeading.after(itemsTable);
+          }
 
-    // Render Collections (Categories) table
-    if (collectionsJson.response && collectionsJson.response.docs.length > 0) {
-      const categoriesHeading = document.createElement('h2');
-      categoriesHeading.textContent = 'Categories';
-      const collectionsTable = document.createElement('table');
-      collectionsTable.className = 'striped';
+          // Render Collections (Categories) table
+          if (collectionsJson.response && collectionsJson.response.docs.length > 0) {
+            const categoriesHeading = document.createElement('h2');
+            categoriesHeading.textContent = 'Categories';
+            const collectionsTable = document.createElement('table');
+            collectionsTable.className = 'striped';
 
-      const thead = document.createElement('thead');
-      const headRow = document.createElement('tr');
-      headRow.innerHTML = '<th>Title</th><th>Weekly Views</th>';
-      thead.appendChild(headRow);
+            const thead = document.createElement('thead');
+            const headRow = document.createElement('tr');
+            headRow.innerHTML = '<th>Title</th><th>Weekly Views</th>';
+            thead.appendChild(headRow);
 
-      const tbody = document.createElement('tbody');
-      for (const doc of collectionsJson.response.docs) {
-        const row = document.createElement('tr');
-        const cell1 = document.createElement('td');
-        const link = document.createElement('a');
-        link.href = `?id=${encodeURIComponent(doc.identifier)}`;
-        link.textContent = doc.title || doc.identifier;
-        cell1.appendChild(link);
+            const tbody = document.createElement('tbody');
+            for (const doc of collectionsJson.response.docs) {
+              const row = document.createElement('tr');
+              const cell1 = document.createElement('td');
+              const link = document.createElement('a');
+              link.href = `?id=${encodeURIComponent(doc.identifier)}`;
+              link.textContent = doc.title || doc.identifier;
+              cell1.appendChild(link);
 
-        const cell2 = document.createElement('td');
-        cell2.textContent = doc.week || '–';
+              const cell2 = document.createElement('td');
+              cell2.textContent = doc.week || '–';
 
-        row.appendChild(cell1);
-        row.appendChild(cell2);
-        tbody.appendChild(row);
-      }
+              row.appendChild(cell1);
+              row.appendChild(cell2);
+              tbody.appendChild(row);
+            }
 
-      collectionsTable.appendChild(thead);
-      collectionsTable.appendChild(tbody);
-      table.after(categoriesHeading);
-      categoriesHeading.after(collectionsTable);
-    }
-          
+            collectionsTable.appendChild(thead);
+            collectionsTable.appendChild(tbody);
+            table.after(categoriesHeading);
+            categoriesHeading.after(collectionsTable);
+          }
+
           infoDiv.textContent = `Showing files for: ${identifier}${subdir ? '/' + subdir : ''}`;
 
           const files = json.files;
