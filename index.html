@@ -179,7 +179,8 @@
             thead.appendChild(headRow);
 
             const tbody = document.createElement('tbody');
-            for (const doc of itemsJson.response.docs) {
+            const sortedItems = itemsJson.response.docs.sort((a, b) => (parseInt(b.week) || 0) - (parseInt(a.week) || 0));
+            for (const doc of sortedItems) {
               const row = document.createElement('tr');
 
               const cell1 = document.createElement('td');
