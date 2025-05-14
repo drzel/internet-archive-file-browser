@@ -208,8 +208,8 @@
 
             itemsTable.appendChild(thead);
             itemsTable.appendChild(tbody);
-            table.after(itemsHeading);
-            itemsHeading.after(itemsTable);
+            infoDiv.after(itemsHeading);
+      itemsHeading.after(itemsTable);
           }
 
           // Render Collections (Categories) table
@@ -243,8 +243,8 @@
 
             collectionsTable.appendChild(thead);
             collectionsTable.appendChild(tbody);
-            table.after(categoriesHeading);
-            categoriesHeading.after(collectionsTable);
+            infoDiv.after(categoriesHeading);
+      categoriesHeading.after(collectionsTable);
           }
 
           infoDiv.textContent = `Showing files for: ${identifier}${subdir ? '/' + subdir : ''}`;
