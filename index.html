@@ -135,25 +135,102 @@
       }
 
       async function loadFiles(identifier, subdir) {
-        const metadataUrl = `https://archive.org/metadata/${identifier}`;
-        const table = document.getElementById("file-table");
-        const tableBody = document.querySelector("#file-table tbody");
-        const infoDiv = document.getElementById("info");
-        const breadcrumb = document.getElementById("breadcrumb");
-        const loading = document.getElementById("loading");
-        tableBody.innerHTML = '';
+  const metadataUrl = `https://archive.org/metadata/${identifier}`;
+  const collectionsUrl = `https://archive.org/advancedsearch.php?q=collection:${identifier}+AND+mediatype:collection&fl[]=identifier&fl[]=title&fl[]=week&rows=1000&sort[]=week+desc&output=json`;
+  const itemsUrl = `https://archive.org/advancedsearch.php?q=collection:${identifier}+AND+mediatype:(movies OR texts OR audio OR data)&fl[]=identifier&fl[]=title&rows=1000&output=json`;
 
-        try {
-          const res = await fetch(metadataUrl);
-          const json = await res.json();
+  const table = document.getElementById("file-table");
+  const tableBody = document.querySelector("#file-table tbody");
+  const infoDiv = document.getElementById("info");
+  const breadcrumb = document.getElementById("breadcrumb");
+  const loading = document.getElementById("loading");
+  tableBody.innerHTML = '';
 
-          loading.style.display = 'none';
-          table.style.display = 'table';
-          infoDiv.style.display = 'block';
-          breadcrumb.style.display = 'block';
+  try {
+    const [metaRes, collectionsRes, itemsRes] = await Promise.all([
+      fetch(metadataUrl),
+      fetch(collectionsUrl),
+      fetch(itemsUrl)
+    ]);
 
-          buildBreadcrumb(identifier, subdir);
-          updateSortIndicators();
+    const json = await metaRes.json();
+    const collectionsJson = await collectionsRes.json();
+    const itemsJson = await itemsRes.json();
+
+    loading.style.display = 'none';
+    table.style.display = 'table';
+    infoDiv.style.display = 'block';
+    breadcrumb.style.display = 'block';
+
+    buildBreadcrumb(identifier, subdir);
+    updateSortIndicators();
+    infoDiv.textContent = `Showing files for: ${identifier}${subdir ? '/' + subdir : ''}`;
+
+    // Render Items table
+    if (itemsJson.response && itemsJson.response.docs.length > 0) {
+      const itemsHeading = document.createElement('h2');
+      itemsHeading.textContent = 'Items';
+      const itemsTable = document.createElement('table');
+      itemsTable.className = 'striped';
+
+      const thead = document.createElement('thead');
+      const headRow = document.createElement('tr');
+      headRow.innerHTML = '<th>Title</th>';
+      thead.appendChild(headRow);
+
+      const tbody = document.createElement('tbody');
+      for (const doc of itemsJson.response.docs) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        const link = document.createElement('a');
+        link.href = `?id=${encodeURIComponent(doc.identifier)}`;
+        link.textContent = doc.title || doc.identifier;
+        cell.appendChild(link);
+        row.appendChild(cell);
+        tbody.appendChild(row);
+      }
+
+      itemsTable.appendChild(thead);
+      itemsTable.appendChild(tbody);
+      table.after(itemsHeading);
+      itemsHeading.after(itemsTable);
+    }
+
+    // Render Collections (Categories) table
+    if (collectionsJson.response && collectionsJson.response.docs.length > 0) {
+      const categoriesHeading = document.createElement('h2');
+      categoriesHeading.textContent = 'Categories';
+      const collectionsTable = document.createElement('table');
+      collectionsTable.className = 'striped';
+
+      const thead = document.createElement('thead');
+      const headRow = document.createElement('tr');
+      headRow.innerHTML = '<th>Title</th><th>Weekly Views</th>';
+      thead.appendChild(headRow);
+
+      const tbody = document.createElement('tbody');
+      for (const doc of collectionsJson.response.docs) {
+        const row = document.createElement('tr');
+        const cell1 = document.createElement('td');
+        const link = document.createElement('a');
+        link.href = `?id=${encodeURIComponent(doc.identifier)}`;
+        link.textContent = doc.title || doc.identifier;
+        cell1.appendChild(link);
+
+        const cell2 = document.createElement('td');
+        cell2.textContent = doc.week || '–';
+
+        row.appendChild(cell1);
+        row.appendChild(cell2);
+        tbody.appendChild(row);
+      }
+
+      collectionsTable.appendChild(thead);
+      collectionsTable.appendChild(tbody);
+      table.after(categoriesHeading);
+      categoriesHeading.after(collectionsTable);
+    }
+          
           infoDiv.textContent = `Showing files for: ${identifier}${subdir ? '/' + subdir : ''}`;
 
           const files = json.files;
