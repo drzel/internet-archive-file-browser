@@ -171,7 +171,7 @@
           // Render Items table
           if (itemsJson.response && itemsJson.response.docs.length > 0) {
             const itemsHeading = document.createElement('h2');
-            itemsHeading.textContent = 'Items';
+            itemsHeading.innerHTML = '<span id="items-toggle" style="cursor: pointer; user-select: none;">▶ Items</span>';
             const itemsTable = document.createElement('table');
             itemsTable.className = 'striped';
 
@@ -211,13 +211,18 @@
             itemsTable.appendChild(thead);
             itemsTable.appendChild(tbody);
             infoDiv.after(itemsHeading);
+            itemsTable.hidden = true;
+            itemsHeading.addEventListener('click', () => {
+              itemsTable.hidden = !itemsTable.hidden;
+              document.getElementById('items-toggle').textContent = (itemsTable.hidden ? '▶' : '▼') + ' Items';
+            });
             itemsHeading.after(itemsTable);
           }
 
           // Render Collections (Categories) table
           if (collectionsJson.response && collectionsJson.response.docs.length > 0) {
             const categoriesHeading = document.createElement('h2');
-            categoriesHeading.textContent = 'Categories';
+            categoriesHeading.innerHTML = '<span id="collections-toggle" style="cursor: pointer; user-select: none;">▶ Collections</span>';
             const collectionsTable = document.createElement('table');
             collectionsTable.className = 'striped';
 
@@ -246,6 +251,11 @@
             collectionsTable.appendChild(thead);
             collectionsTable.appendChild(tbody);
             infoDiv.after(categoriesHeading);
+            collectionsTable.hidden = true;
+            categoriesHeading.addEventListener('click', () => {
+              collectionsTable.hidden = !collectionsTable.hidden;
+              document.getElementById('collections-toggle').textContent = (collectionsTable.hidden ? '▶' : '▼') + ' Collections';
+            });
             categoriesHeading.after(collectionsTable);
           }
 
