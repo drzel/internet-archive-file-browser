@@ -166,7 +166,7 @@
 
           buildBreadcrumb(identifier, subdir);
           updateSortIndicators();
-          infoDiv.textContent = `Showing files for: ${identifier}${subdir ? '/' + subdir : ''}`;
+          infoDiv.innerHTML = `<a href="https://archive.org/details/${identifier}" target="_blank" rel="noopener">View on archive.org</a>`;
 
           // Render Items table
           if (itemsJson.response && itemsJson.response.docs.length > 0) {
@@ -259,7 +259,7 @@
             categoriesHeading.after(collectionsTable);
           }
 
-          infoDiv.textContent = `Showing files for: ${identifier}${subdir ? '/' + subdir : ''}`;
+          infoDiv.innerHTML = `<a href="https://archive.org/details/${identifier}" target="_blank" rel="noopener">View on archive.org</a>`;
 
           const files = json.files;
           const dirEntries = [];
